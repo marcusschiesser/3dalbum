@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" xmlns:album3d="de.marcusschiesser.album3d.*" backgroundColor="black" width="710" height="340" viewSourceURL="srcview/index.html">
+<mx:Script>
+	<![CDATA[
+		import de.marcusschiesser.album3d.PictureLoader;
+		import mx.rpc.AsyncToken;
+		import mx.collections.ArrayCollection;
+		import mx.rpc.events.ResultEvent;
+		import mx.controls.Alert;
+		import mx.core.IFlexDisplayObject;
+		import mx.managers.PopUpManager;
+		
+		private function createDataSource(photos:ArrayCollection):Array {
+			var result:Array = new Array();
+			for each(var photo:Object in photos) {
+				var mappedPhoto:Object = {
+					picture: 'http://farm' + photo.farm + '.static.flickr.com/' + photo.server + '/' + photo.id + '_' + photo.secret + '_m.jpg',
+					label: photo.title
+				};
+				result.push(mappedPhoto);
+			}
+			return result;
+		}
+		
+		private function onResult(e:ResultEvent):void {
+			var photos:ArrayCollection = service.lastResult.rsp.photos.photo as ArrayCollection;
+			if(photos==null || photos.length==0) {
+				album.dataProvider = new Array();
+				status.text = "No search results. Try again.";
+			} else {
+				album.dataProvider = createDataSource(photos);
+				status.text = "Loading first picture...";
+			}
+		}
+		
+		private function search(text:String):void {
+			status.text = "Retrieving data from flickr...";
+			service.send({text: text});
+		}
+
+	]]>
+</mx:Script>
+	<mx:HTTPService id="service" url="http://api.flickr.com/services/rest/?method=flickr.photos.search&amp;per_page=30&amp;api_key=2af404f2dfb7e80143a503dc72ee4367"
+		result="onResult(event)" resultFormat="object"/>
+	<album3d:Album3D id="album" width="100%" height="100%"  
+		tileWidth="240" tileHeight="180" padding="20" zoomViewZ="-300" fullViewZ="1500" startPosX="-480"
+		pictureClick="trace(event.data.label)"
+		pictureRollOver="trace('over:'+event.data.label)"
+		pictureRollOut="trace('out:'+event.data.label)" 
+		creationComplete="search('fruits')"
+		pictureLoaded="status.text=''"/>
+	<mx:TextInput width="100%" id="searchInput" enter="search(searchInput.text)" color="white" backgroundColor="black"/>
+	<mx:Label bottom="0" color="white" id="status"/>
+</mx:Application>
